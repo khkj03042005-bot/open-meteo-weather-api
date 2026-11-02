@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>오늘의 진짜 날씨판</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#f3f6fb;color:#172033;margin:0;padding:32px}
+    main{max-width:760px;margin:auto;background:white;padding:28px;border-radius:18px}
+    button{background:#2458a6;color:white;border:0;padding:12px 18px;border-radius:9px;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f4f8;padding:16px;border-radius:10px}
+    .muted{color:#68778e}.status{padding:12px;border-radius:10px;background:#f1f4f8}
+    .last-good{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-top:18px}
+    .last-good h2{font-size:18px;margin:0 0 8px}.ok{color:#176b3a}.warn{color:#9a5700}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>오늘의 진짜 날씨판</h1>
+    <p class="muted">Open-Meteo 실제 API 연결 · 기본 위치: 대전</p>
+    <button id="load">현재 날씨 불러오기</button>
+    <p id="message" class="status">날씨 정보를 확인할 준비가 되었습니다.</p>
+    <section class="last-good" aria-live="polite">
+      <h2>마지막 정상 수신 데이터</h2>
+      <p id="lastGoodMessage" class="muted">저장된 데이터가 있는지 확인하는 중...</p>
+      <pre id="lastGoodResult">아직 표시할 데이터가 없습니다.</pre>
+    </section>
+    <h2>이번 API 응답</h2>
+    <pre id="result">버튼을 눌러 API를 호출하세요.</pre>
+  </main>
+  <script>
+    const loadButton = document.getElementById("load");
+    const message = document.getElementById("message");
+    const result = document.getElementById("result");
+    const lastGoodMessage = document.getElementById("lastGoodMessage");
+    const lastGoodResult = document.getElementById("lastGoodResult");
+
+    function showLastGood(record) {
+      if (!record) {
+        lastGoodMessage.textContent = "아직 저장된 정상 데이터가 없습니다. API 호출에 성공하면 자동 저장됩니다.";
+        lastGoodResult.textContent = "저장된 데이터 없음";
+        return;
+      }
+      lastGoodMessage.textContent = `${record.location.city} · 마지막 성공: ${record.fetchedAtKST}`;
+      lastGoodResult.textContent = JSON.stringify(record, null, 2);
+    }
+
+    async function loadSavedWeather() {
+      try {
+        const response = await fetch("/api/last-good");
+        const json = await response.json();
+        if (!response.ok || !json.success) throw new Error(json.error || "저장 데이터 조회 실패");
+        showLastGood(json.lastGood);
+      } catch (error) {
+        lastGoodMessage.textContent = `저장 데이터 확인 실패: ${error.message}`;
+      }
+    }
+
+    loadButton.addEventListener("click", async () => {
+      loadButton.disabled = true;
+      message.textContent = "새 날씨 데이터를 가져오는 중...";
+      message.className = "status";
+      try {
+        const response = await fetch("/api/weather");
+        const json = await response.json();
+        result.textContent = JSON.stringify(json, null, 2);
+        if (!response.ok || !json.success) {
+          showLastGood(json.lastGood || null);
+          message.textContent = json.hasLastGood
+            ? `새 데이터 수신 실패. 마지막 정상 데이터를 유지합니다. (${json.detail || json.error})`
+            : `날씨 수신 실패. 아직 보존된 정상 데이터가 없습니다. (${json.detail || json.error})`;
+          message.className = "status warn";
+          return;
+        }
+        showLastGood(json);
+        message.textContent = `${json.location.city} 현재 기온: ${json.data.temperature}${json.data.temperatureUnit} · 정상 데이터를 저장했습니다.`;
+        message.className = "status ok";
+      } catch (error) {
+        message.textContent = `요청 오류: ${error.message}`;
+        message.className = "status warn";
+        await loadSavedWeather();
+      } finally {
+        loadButton.disabled = false;
+      }
+    });
+
+    loadSavedWeather();
+  </script>
+</body>
+</html>

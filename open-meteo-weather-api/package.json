@@ -1,0 +1,13 @@
+{
+  "name": "open-meteo-weather-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Open-Meteo weather API proxy for Assignment 4",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

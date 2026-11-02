@@ -1,0 +1,10 @@
+node_modules/
+.env
+data/last-good-weather.json
+data/last-good-weather.json.tmp
+
+data/weather-history.json
+data/weather-history.json.tmp
+
+.env.*
+!.env.example
