@@ -24,6 +24,7 @@
     <p class="muted">Open-Meteo 실제 API 연결 · 기본 위치: 대전</p>
     <div class="controls">
       <button id="load">현재 날씨 불러오기</button>
+      <button id="retry" type="button">다시 시도</button>
       <label for="simulation">오류 상황 테스트</label>
       <select id="simulation">
         <option value="">실제 API 호출</option>
@@ -164,8 +165,11 @@
       await loadWeatherHistory();
     }
 
-    loadButton.addEventListener("click", async () => {
+    const retryButton = document.getElementById("retry");
+
+    async function requestWeather() {
       loadButton.disabled = true;
+      retryButton.disabled = true;
       message.textContent = "새 날씨 데이터를 가져오는 중...";
       message.className = "status";
       try {
@@ -175,24 +179,38 @@
         result.textContent = JSON.stringify(json, null, 2);
         if (!response.ok || !json.success) {
           showLastGood(json.lastGood || null);
-          message.textContent = json.hasLastGood
-            ? `새 데이터 수신 실패. 마지막 정상 데이터를 유지합니다. (${json.detail || json.error})`
-            : `날씨 수신 실패. 아직 보존된 정상 데이터가 없습니다. (${json.detail || json.error})`;
+          const guidance = {
+            NETWORK: "인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
+            TIMEOUT: "응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.",
+            RATE_LIMITED: "요청 제한이 발생했습니다. 잠시 기다린 뒤 다시 시도해 주세요.",
+            UPSTREAM_UNAUTHORIZED: "외부 날씨 서비스의 인증 상태를 확인해야 합니다.",
+            UPSTREAM_FORBIDDEN: "외부 날씨 서비스의 접근 권한을 확인해야 합니다.",
+            INVALID_JSON: "외부 서비스가 올바른 데이터를 보내지 않았습니다.",
+            INVALID_SCHEMA: "수신한 날씨 데이터의 형식이 올바르지 않습니다."
+          };
+          const saved = json.hasLastGood
+            ? "마지막 정상 데이터를 화면에 유지했습니다."
+            : "아직 저장된 정상 데이터가 없습니다.";
+          message.textContent = `${json.detail || json.error || "날씨 수신 실패"} ${guidance[json.code] || "잠시 후 다시 확인해 주세요."} ${saved}`;
           message.className = "status warn";
           return;
         }
         showLastGood(json);
         await loadWeatherHistory();
-        message.textContent = `${json.location.city} 현재 기온: ${json.data.temperature}${json.data.temperatureUnit} · 정상 데이터를 저장했습니다.`;
+        message.textContent = `${json.location.city} 현재 기온: ${json.data.temperature}${json.data.temperatureUnit} · 정상 데이터를 저장하고 복구했습니다.`;
         message.className = "status ok";
       } catch (error) {
-        message.textContent = `요청 오류: ${error.message}`;
+        message.textContent = `서버에 연결하지 못했습니다: ${error.message} · 인터넷과 서버 실행 상태를 확인해 주세요.`;
         message.className = "status warn";
         await loadSavedWeather();
       } finally {
         loadButton.disabled = false;
+        retryButton.disabled = false;
       }
-    });
+    }
+
+    loadButton.addEventListener("click", requestWeather);
+    retryButton.addEventListener("click", requestWeather);
 
     loadSavedWeather();
   </script>
