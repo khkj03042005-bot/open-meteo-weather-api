@@ -25,7 +25,8 @@
 ### 현재 버전 정보
 
 Git Commit:
-`44cff0629dc7d22968a0483180082dce0916bd3a`
+- C11 검증 기준 소스 버전 ID: 44cff0629dc7d22968a0483180082dce0916bd3a
+- 인수인계 문서 최신 수정 버전 ID: 50acea04ed7e7dac2df4215d91d529f0dc8feda8
 
 ### 테스트 결과
 
