@@ -25,7 +25,6 @@
 ### 현재 버전 정보
 
 Git Commit:
-Git Commit:
 - C11 검증 기준 소스 버전 ID: 44cff0629dc7d22968a0483180082dce0916bd3a
 - 문서 수정 전 저장소 버전 ID: 50acea04ed7e7dac2df4215d91d529f0dc8feda8
 
